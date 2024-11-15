@@ -1,0 +1,140 @@
+<html>
+    <head>
+        <title>Key Generation Benchmark</title>
+
+        <style>
+            @import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
+
+            body {
+                font-family: 'Poppins', sans-serif;
+                margin: 0 !important;
+            }
+
+            main {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                margin-top: 15vh;
+                width: 100%;
+            }
+
+            span {
+                font-size: 18px;
+            }
+
+            .result-wrappers {
+                display: flex;
+                flex-direction: column;
+                text-align: center;
+                margin-top: 10px;
+            }
+
+            .result-wrappers > span {
+                visibility: hidden;
+            }
+        </style>
+    </head>
+    <body>
+        <main>
+            <h1>Key Generation Benchmark</h1>
+            <span id="status">Warming up...</span>
+
+            <div class="result-wrappers">
+                <span id="rsa-3072-wrapper"><b>RSA-3072 Mean Time To Generate: </b><span id="rsa-3072-result"></span>ms</span>
+                <span id="rsa-4096-wrapper"><b>RSA-4096 Mean Time To Generate: </b><span id="rsa-4096-result"></span>ms</span>
+                <span id="ecdsa-p256-wrapper"><b>ECDSA-P256 Mean Time To Generate: </b><span id="ecdsa-p256-result"></span>ms</span>    
+            </div>
+        </main>
+        
+        <script>
+            function generate(params) {
+                return window.crypto.subtle.generateKey(params, false, ['sign']);
+            }
+
+            function generateRsa(bits) {
+                const params = {
+                    name: 'RSASSA-PKCS1-v1_5',
+                    modulusLength: bits,
+                    publicExponent: new Uint8Array([0x01, 0x00, 0x01]),
+                    hash: {name: 'SHA-256'}
+                };
+
+                return generate(params);
+            }
+
+            function generateRsa3072() {
+                return generateRsa(3072);
+            }
+
+            function generateRsa4096() {
+                return generateRsa(4096);
+            }
+
+            function generateEc() {
+                const params = {
+                    name: 'ECDSA',
+                    namedCurve: 'P-256',
+                    hash: {name: 'SHA-256'}
+                };
+
+                return generate(params);
+            }
+
+            async function warmup() {
+                const iterations = 10;
+                for (let i = 0; i < iterations; i++) {
+                    await generateRsa3072();
+                    await generateRsa4096();
+                    await generateEc();
+
+                    console.log(`Done warmup iteration ${i} / ${iterations}`);
+                }
+            }
+
+            async function benchmark() {
+
+            }
+
+            async function run() {
+                await warmup();
+                document.getElementById('status').innerText = 'Running benchmark...';
+
+                const iterations = 50;
+
+                let start = new Date().getTime();
+                for (let i = 0; i < iterations; i++) {
+                    await generateRsa3072();
+                    console.log(`Done RSA-3072 iteration ${i} / ${iterations}`);
+                }
+                let end = new Date().getTime();
+
+                document.getElementById('rsa-3072-wrapper').style.visibility = 'visible';
+                document.getElementById('rsa-3072-result').innerText = (end - start) / iterations;
+
+                start = new Date().getTime();
+                for (let i = 0; i < iterations; i++) {
+                    await generateRsa4096();
+                    console.log(`Done RSA-4096 iteration ${i} / ${iterations}`);
+                }
+                end = new Date().getTime();
+
+                document.getElementById('rsa-4096-wrapper').style.visibility = 'visible';
+                document.getElementById('rsa-4096-result').innerText = (end - start) / iterations;
+
+                start = new Date().getTime();
+                for (let i = 0; i < iterations; i++) {
+                    await generateEc();
+                    console.log(`Done ECDSA-P256 iteration ${i} / ${iterations}`);
+                }
+                end = new Date().getTime();
+
+                document.getElementById('ecdsa-p256-wrapper').style.visibility = 'visible';
+                document.getElementById('ecdsa-p256-result').innerText = (end - start) / iterations;
+
+                document.getElementById('status').innerText = 'Benchmark complete!';
+            }
+
+            run();
+        </script>
+    </body>
+</html>
